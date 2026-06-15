@@ -12,8 +12,25 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
 )
 
-class VideoFunction(QThread):
+"""
+Multi-Feed Camera GUI
 
+The following program, using PyQT6, creates a desktop application that displays
+six duplicated camera feeds in a 2x3 grid layout. The webcam is opened using OpenCV, and each captured frame is copied into all six feed panels.
+
+PyQT6 was used for the GUI
+OpenCV was used to capture the webcam frames.
+QThread was used so the video capture loop does not freeze the GUI when starting/stopping feeds.
+
+"""
+
+class VideoFunction(QThread):
+    """
+    Background worker thread which is responsible for reading the frames from the webcam.
+
+    The following classes uses OpenCV to open the webcam and read frames continuously.
+    From there, it sends the frames to the GUI, using PyQT signals, so the main windows remains responsive while running.
+    """
 
     frame_signal = pyqtSignal(QImage)
     status_signal = pyqtSignal(str)
@@ -72,6 +89,15 @@ class VideoFunction(QThread):
     
 
 class CameraFeed(QWidget):
+    """
+    Represents a visual camera feed panel within the GUI
+
+    Each panels is as follows:
+    - Feed title
+    - Video display space 
+    - Status label
+    
+    """
 
     def __init__(self, feed_num, source=0):
         super().__init__()
@@ -120,7 +146,12 @@ class CameraFeed(QWidget):
         self.status_label.setText("Stopped")
 
 class Dashboard(QWidget):
+    """
+    This is the main application window.
     
+    This class creates six CameraFeed widgets in a 2x3 grid,
+    and then uses a shared VideoFunction worker. After, each incoming frame is duplicated across all six feed panels.
+    """
     def __init__(self):
         super().__init__()
 
@@ -132,7 +163,7 @@ class Dashboard(QWidget):
         main_layout = QVBoxLayout()
         grid_layout = QGridLayout()
 
-
+        #Main function that creates the six feed panels. Duplicates the displays of one webcam source.
         for i in range(6):
             feed = CameraFeed(i + 1)
             self.feeds.append(feed)
@@ -160,6 +191,7 @@ class Dashboard(QWidget):
         self.setLayout(main_layout)
 
         source = 0
+        #Creates one camera worker, and the captured frames are sent to all six feed panels.
         self.worker = VideoFunction(source)
         self.worker.frame_signal.connect(self.update_all_frames)
         self.worker.status_signal.connect(self.update_all_status)
@@ -175,6 +207,7 @@ class Dashboard(QWidget):
         for feed in self.feeds:
             feed.clear_feed()
 
+    #This function duplicates the webcam frames into each feed panel.
     def update_all_frames(self, image):
         for feed in self.feeds:
             feed.update_frame(image)
