@@ -1,5 +1,7 @@
 import sys
 import cv2
+import time
+from datetime import datetime
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
@@ -16,7 +18,7 @@ from PyQt6.QtWidgets import (
 Multi-Feed Camera GUI
 
 The following program, using PyQT6, creates a desktop application that displays
-six duplicated camera feeds in a 2x3 grid layout. The webcam is opened using OpenCV, and each captured frame is copied into all six feed panels.
+two duplicated camera feeds in a 1x2 grid layout. The webcam is opened using OpenCV, and each captured frame is copied into all feed panels.
 
 PyQT6 was used for the GUI
 OpenCV was used to capture the webcam frames.
@@ -34,6 +36,7 @@ class VideoFunction(QThread):
 
     frame_signal = pyqtSignal(QImage)
     status_signal = pyqtSignal(str)
+    fps_signal = pyqtSignal(float)
 
     def __init__(self, source=0):
         super().__init__()
@@ -50,6 +53,9 @@ class VideoFunction(QThread):
         
         self.status_signal.emit("Running.")
 
+        frame_count = 0
+        t_start = time.monotonic()
+
         while self.running:
             working, frame = self.cap.read()
 
@@ -57,6 +63,10 @@ class VideoFunction(QThread):
                 self.status_signal.emit("No frame was received.")
                 continue
             
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            cv2.putText(frame, timestamp, (10,30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (0,255,0),2,)
+
             #Note that OpenCV use BGR, but PyQT uses RGB
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -72,6 +82,13 @@ class VideoFunction(QThread):
             )
 
             self.frame_signal.emit(image.copy())
+            frame_count += 1
+            if frame_count >= 30:
+                time_elapsed = time.monotonic() - t_start
+                self.fps_signal.emit(frame_count / time_elapsed if time_elapsed else 0)
+                frame_count = 0
+                t_start = time.monotonic()
+
             self.msleep(33)
 
         if self.cap is not None:
@@ -109,6 +126,14 @@ class CameraFeed(QWidget):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
 
+        self.fps_label = QLabel("FPS")
+        self.fps_label.setStyleSheet("font-size 12px; font-weight: bold")
+
+        self.fps_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+
+
         self.video_label = QLabel("No video")
         self.video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.video_label.setMinimumSize(320,320)
@@ -121,6 +146,8 @@ class CameraFeed(QWidget):
         layout.addWidget(self.title_label)
         layout.addWidget(self.video_label)
         layout.addWidget(self.status_label)
+        layout.addWidget(self.fps_label)
+        
 
         self.setLayout(layout)
 
@@ -140,23 +167,27 @@ class CameraFeed(QWidget):
     def update_status(self, status):
         self.status_label.setText(status)
 
+    def update_fps(self, fps):
+        self.fps_label.setText(f"FPS: {fps:.1f}")
+
     def clear_feed(self):
         self.video_label.clear()
         self.video_label.setText("No Video")
         self.status_label.setText("Stopped")
+        self.fps_label.setText("FPS")
 
 class Dashboard(QWidget):
     """
     This is the main application window.
     
-    This class creates six CameraFeed widgets in a 2x3 grid,
-    and then uses a shared VideoFunction worker. After, each incoming frame is duplicated across all six feed panels.
+    This class creates two CameraFeed widgets in a 1x2 grid,
+    and then uses a shared VideoFunction worker. After, each incoming frame is duplicated across all two feed panels.
     """
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Multi-Feed Camera GUI")
-        self.resize(1100, 750)
+        self.resize(1100, 600)
 
         self.feeds = []
 
@@ -164,7 +195,7 @@ class Dashboard(QWidget):
         grid_layout = QGridLayout()
 
         #Main function that creates the six feed panels. Duplicates the displays of one webcam source.
-        for i in range(6):
+        for i in range(2):
             feed = CameraFeed(i + 1)
             self.feeds.append(feed)
 
@@ -195,6 +226,7 @@ class Dashboard(QWidget):
         self.worker = VideoFunction(source)
         self.worker.frame_signal.connect(self.update_all_frames)
         self.worker.status_signal.connect(self.update_all_status)
+        self.worker.fps_signal.connect(self.update_all_fps)
 
     def start_all(self):
         if not self.worker.isRunning():
@@ -215,6 +247,10 @@ class Dashboard(QWidget):
     def update_all_status(self, status):
         for feed in self.feeds:
             feed.update_status(status)
+
+    def update_all_fps(self, fps):
+        for feed in self.feeds:
+            feed.update_fps(fps)
 
     def closeEvent(self, event):
         self.stop_all()
