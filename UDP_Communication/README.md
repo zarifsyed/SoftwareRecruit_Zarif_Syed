@@ -2,9 +2,9 @@
 
 Overview
 
-This folder contains the files for my solution regarding the mandatory UDP communication task, as part of the TorontoMetRobotics Software Team package. The goal of this task was to send an array of 100 16-bit integers from a python script (sender.py) to another (reciever.py).
+This folder contains the files for my solution regarding the mandatory UDP communication task, as part of the TorontoMetRobotics Software Team package. The goal of this task was to send an array of 100 16-bit integers from a Python script (sender.py) to another (reciever.py).
 
-The following contents:
+The following content:
 
  - sender.py: constructs (encodes) and sends the UDP packet.
  - reciever.py: receives the packet, decodes, validates, and then prints the sent integer array.
@@ -30,7 +30,7 @@ The | symbol in the packet helps seperate each section. Since commas are used in
 
 ## Compressing Repeated Integers
 
-To handle any long sequences of the same integer, the script uses run-length encoding to compress the repeated integers.
+To handle any long sequences of the same integer, the script uses run-length encoding to compress the repeated integers. Run-length encoding was used since the sample data has repeated values. As a result, packet size is reduced, while the encoding and decoding mechanisms are simple and efficient.
 
 For instance:
 [5, 5, 5, 10, 10]
@@ -38,7 +38,7 @@ For instance:
 is converted/encoded to:
 "5:3,10:2"
 
-The receiver script will interpret this as 5 appearing 3 times and 10 appearing 2 times. This also helps reduce packet size.
+The receiver script will interpret this as 5 appearing 3 times and 10 appearing 2 times. This also helps reduce packet size. 
 
 ## Data Validation
 The sender script checks if:
@@ -88,3 +88,6 @@ The sender also enables the support for broadcast with:
 
 However, for my submitted version, I left TARGET_IP as 127.0.0.1 so it can be tested locally without the use of multiple computers.
 
+# Limitations
+
+The submitted version uses localhost (127.0.0.1). The project does implement broadcast communication, but since a single machine was available, it could not be shown.

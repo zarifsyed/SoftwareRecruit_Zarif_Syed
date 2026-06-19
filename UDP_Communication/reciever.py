@@ -67,6 +67,7 @@ def parse_packet(packet):
     if len(numbers) != length:
         raise ValueError("Array length does not match the length of packet.")
     
+    # Recalculate the checksum and then compare it with the transmitted value.
     actual_sumcheck = sum_check(numbers)
 
     if actual_sumcheck != sumcheck:

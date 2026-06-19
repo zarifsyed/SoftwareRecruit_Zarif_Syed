@@ -106,6 +106,7 @@ def main():
         100, 100, 100, 100, 100
     ]
      
+     # Constructs the final UDP packet using the custom protocol.
      p = build_packet(numbers)
 
      # Using IPv4, it creates a UDP Socket, which is an endpoint that lets programs send or receive data 
