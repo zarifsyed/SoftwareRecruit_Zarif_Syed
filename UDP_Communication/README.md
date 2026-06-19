@@ -6,7 +6,7 @@ This folder contains the files for my solution regarding the mandatory UDP commu
 
 The following content:
 
- - sender.py: constructs (encodes) and sends the UDP packet.
+ - sender.py: constructs (encodes), validates and sends the UDP packet.
  - reciever.py: receives the packet, decodes, validates, and then prints the sent integer array.
 
 # How the Packet Functions
@@ -26,6 +26,17 @@ What each part of the packet represents:
  4. encoded_data: Stores the compressed (using Run-Length encoding) integer array.
 
 The | symbol in the packet helps seperate each section. Since commas are used inside the compressed array, using | makes it easier to split and parse the packet.
+
+## Example Output
+
+Received Packet:
+UDPARRAY1|100|5250|5:5,10:5,...
+
+Decoded Array:
+[5, 5, 5, 5, 5, 10, 10, ...]
+
+Integers Validated.
+Number of Integers: 100
 
 
 ## Compressing Repeated Integers

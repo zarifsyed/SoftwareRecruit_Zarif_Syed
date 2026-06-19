@@ -3,7 +3,7 @@
 
 Overview
 
-The following project is a desktop application, using PyQT6, that displays two duplicated camera feeds in a 1x2 grid layout. The application uses OpenCV to enable one webcam and displays the same live video (frames) on all two feed panels.
+The following project is a desktop application, using PyQT6, that displays two duplicated camera feeds in a 1x2 grid layout. The application uses OpenCV to enable one webcam and displays the same live video (frames) on both feed panels.
 
 The purpose of this design is to emulate a multi-camera dashboard using a single camera, rather than multiple.
 
@@ -65,7 +65,7 @@ CameraFeed represents a single video panel for the GUI. Each feed panel features
 Dashboard is responsible for the main application window, tying in the two previous classes together to build a 1x2 grid from two CameraFeed widgets and connects the start/stop buttons.
 
 
-One shared VideoFunction worker is created, regardless of the amount of panel. Its corresponding frame_signal, status_signal, and fps_signal are connected, then broadcasted to every panel. As a result, this is what causes the duplicated cameras, since it is the same frame being displayed to two panels.
+One shared VideoFunction worker is created, regardless of the amount of panels. Its corresponding frame_signal, status_signal, and fps_signal are connected to Dashboard methods, then broadcasts the updates to every panel. As a result, this is what causes the duplicated cameras, since it is the same frame being displayed to two panels.
 
   
   
@@ -104,7 +104,7 @@ A new application window will pop up, and you will then be able to run the proje
 
   
 
-Note: Once start feed is clicked, there is a slight delay into pressing the button, and for the feed to then start displaying the webcam.
+Note: Once Start Feeds is clicked, there is a slight delay before the webcam begins to display video.
 
   
 
