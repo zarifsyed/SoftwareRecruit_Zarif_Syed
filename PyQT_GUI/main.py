@@ -46,6 +46,7 @@ class VideoFunction(QThread):
         self.cap = None
 
     def run(self):
+        # Open the webcam souce (source=0: default webcam)
         self.cap = cv2.VideoCapture(self.source)
 
         if not self.cap.isOpened():
@@ -64,8 +65,8 @@ class VideoFunction(QThread):
                 self.status_signal.emit("No frame was received.")
                 continue
             
+            # Add a timestamp overlay, integrated into each video feed.
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
             cv2.putText(frame, timestamp, (10,30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (0,255,0),2,)
 
             #Note that OpenCV use BGR, but PyQT uses RGB
@@ -74,6 +75,7 @@ class VideoFunction(QThread):
             h, w, channels = rgb_frame.shape
             bytes_per_line = channels * w
 
+            #Convert the OpenCV frame into a QImage, which is needed to display on PyQT widgets.
             image = QImage(
                 rgb_frame.data,
                 w,
@@ -82,7 +84,11 @@ class VideoFunction(QThread):
                 QImage.Format.Format_RGB888,
             )
 
+            #Sends a copy of the processed webcam frame to the GUI Thread (Dashboard)
+            #By using copy(), it prevents any possible memory issues between threads
             self.frame_signal.emit(image.copy())
+            
+            # FPS Calulcation every 30 frames for a stable reading
             frame_count += 1
             if frame_count >= 30:
                 time_elapsed = time.monotonic() - t_start
@@ -92,6 +98,7 @@ class VideoFunction(QThread):
 
             self.msleep(33)
 
+        # When the thread is stopped, release webcam resources
         if self.cap is not None:
             self.cap.release()
             self.cap = None
@@ -157,6 +164,8 @@ class CameraFeed(QWidget):
     def update_frame(self, image):
         pixmap = QPixmap.fromImage(image)
 
+        #Scale the image, so it fits the display area
+        # Original aspect ratio is also preserved
         scaled_pixmap = pixmap.scaled(
             self.video_label.width(),
             self.video_label.height(),
@@ -167,12 +176,22 @@ class CameraFeed(QWidget):
         self.video_label.setPixmap(scaled_pixmap)
 
     def update_status(self, status):
+        """
+        Updates the status of each feed
+        """
         self.status_label.setText(status)
 
     def update_fps(self, fps):
+        """
+        Responsible for updating the FPS counter for each feed
+        """
         self.fps_label.setText(f"FPS: {fps:.1f}")
 
+
     def clear_feed(self):
+        """
+        Resets the feed displays to initial, default state
+        """
         self.video_label.clear()
         self.video_label.setText("No Video")
         self.status_label.setText("Stopped")
@@ -196,7 +215,7 @@ class Dashboard(QWidget):
         main_layout = QVBoxLayout()
         grid_layout = QGridLayout()
 
-        #Main function that creates the six feed panels. Duplicates the displays of one webcam source.
+        #Main function that creates the two feed panels. Duplicates the displays of one webcam source.
         for i in range(2):
             feed = CameraFeed(i + 1)
             self.feeds.append(feed)
@@ -224,18 +243,24 @@ class Dashboard(QWidget):
         self.setLayout(main_layout)
 
         source = 0
-        #Creates one camera worker, and the captured frames are sent to all six feed panels.
+        #Creates one camera worker, and the captured frames are sent to all feed panels.
         self.worker = VideoFunction(source)
         self.worker.frame_signal.connect(self.update_all_frames)
         self.worker.status_signal.connect(self.update_all_status)
         self.worker.fps_signal.connect(self.update_all_fps)
 
     def start_all(self):
+        """
+        Starts the camera worker thread, and updates all feeds.
+        """
         if not self.worker.isRunning():
             self.worker.running = True
             self.worker.start()
 
     def stop_all(self):
+        """
+        Stops the camera worker thread, and clears all feeds.
+        """
         if self.worker.isRunning():
             self.worker.stop()
         for feed in self.feeds:
@@ -243,14 +268,25 @@ class Dashboard(QWidget):
 
     #This function duplicates the webcam frames into each feed panel.
     def update_all_frames(self, image):
+        """
+        Updates every feed with the newest frame from the webcam.
+        """
         for feed in self.feeds:
             feed.update_frame(image)
 
     def update_all_status(self, status):
+        """
+        Updates the status of the feeds.
+        Calls update_status() to do so.
+        """
         for feed in self.feeds:
             feed.update_status(status)
 
     def update_all_fps(self, fps):
+        """
+        Updates the FPS counter for each feed.
+        Calls update_fps() to do so.
+        """
         for feed in self.feeds:
             feed.update_fps(fps)
 
