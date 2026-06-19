@@ -32,6 +32,7 @@ class VideoFunction(QThread):
 
     The following classes uses OpenCV to open the webcam and read frames continuously.
     From there, it sends the frames to the GUI, using PyQT signals, so the main windows remains responsive while running.
+    Also, a live timestamp is built into the camera feed, for any logistic purposes.
     """
 
     frame_signal = pyqtSignal(QImage)
@@ -113,6 +114,7 @@ class CameraFeed(QWidget):
     - Feed title
     - Video display space 
     - Status label
+    - FPS Counter
     
     """
 
